@@ -1,2 +1,3 @@
-# mining-research
-Research project on itemset mining frequent itemset explosion
+# Itemset Mining Research
+
+A research project on the frequent itemset explosion
