@@ -3,23 +3,36 @@
 /* searching and comparing
  ********************************************************************/
 
-int *compare_against_all(struct itemset *set, struct dataset *data)
+struct cmpr_results *compare_all(struct dataset *data, int n, int d_rng, int s_rng, int s_stp)
 {
-	int *values = calloc(60 * 3, sizeof *values);
+	struct cmpr_results *rslt = init_cmpr_rslt(d_rng, s_rng, s_stp);
 
+	struct itemset *set;
+	int i;
+	for (i = 0; i < n; ++i) {
+		set = choose_rand_set(data);
+		compare_against_all(rslt, set, data);
+	}
+	return rslt;
+}
+
+void compare_against_all(struct cmpr_results *rslt, struct itemset *set, struct dataset *data)
+{
+	int s_rng = rslt->supp_range;
+	int s_stp = rslt->supp_step;
 	int i, d, s;
 	for (i = 0; i < data->num_sets; ++i) {
 		d = data->size - compare_set(set, data->itemsets + i);
-		if (d > 3 || d == 0)
+		if (d > rslt->dist_range || d == 0)
 			continue;
-		s = ((data->itemsets+i)->support - set->support) / 10 + 30;
+		s = ((data->itemsets+i)->support - set->support) / s_stp + (s_rng / 2);
 		if (s < 0)
 			s = 0;
-		if (s >= 60)
-			s = 59;
-		++values[(s * 3) + d - 1];
+		if (s >= s_rng)
+			s = s_rng - 1;
+		++(rslt->counts[(s * rslt->dist_range) + d - 1]);
+		++(rslt->t_counts[d - 1]);
 	}
-	return values;
 }
 
 int compare_set(struct itemset *a, struct itemset *b)
@@ -55,6 +68,31 @@ struct itemset *choose_rand_set(struct dataset *data)
 	return data->itemsets + r;
 }
 
+/* constructors
+ ********************************************************************/
+
+struct cmpr_results *init_cmpr_rslt(int d_rng, int s_rng, int s_stp)
+{
+	int *counts = calloc(d_rng * s_rng, sizeof *counts);
+	int *t_counts = calloc(d_rng, sizeof *t_counts);
+
+	struct cmpr_results *rslt = malloc(sizeof *rslt);
+	
+	rslt->dist_range = d_rng;
+	rslt->supp_range = s_rng;
+	rslt->supp_step  = s_stp;
+	rslt->counts     = counts;
+	rslt->t_counts   = t_counts;
+}
+
+/* memory management
+ ********************************************************************/
+
+void free_set(struct itemset *set)
+{
+	free(set->items);
+}
+
 /* reading
  ********************************************************************/
 struct dataset *read_data(char *file, int size)
@@ -85,12 +123,12 @@ struct dataset *read_data(char *file, int size)
 
 	fclose(fp);
 
-	struct dataset *result = malloc(sizeof *result);
+	struct dataset *data = malloc(sizeof *data);
 	
-	result->total_sets = total;
-	result->num_sets = i;
-	result->size = size;
-	result->itemsets = sets;
+	data->total_sets = total;
+	data->num_sets = i;
+	data->size = size;
+	data->itemsets = sets;
 }
 
 void parse_line(struct itemset *dest, char *src)
@@ -117,27 +155,61 @@ void parse_line(struct itemset *dest, char *src)
 	dest->support = support;
 }
 
-/* memory management
- ********************************************************************/
-
-void free_set(struct itemset *set)
-{
-	free(set->items);
-}
-
 /* printing
  ********************************************************************/
 
-void print_matrix(int *values)
+void print_cmpr_rslt(struct cmpr_results *rslt)
 {
-	printf("+-----------------------------+   +-----------------------------+\n");
-	printf("| Dist        1      2      3 |   | Dist        1      2      3 |\n");
-	printf("+-----------------------------+   +-----------------------------+\n");
-	int i;
-	for (i = 0; i < 30; ++i) {
-		printf("| %6d %6d %6d %6d |   | %6d %6d %6d %6d |\n", (i-30)*10, values[(i*3)], values[(i*3)+1], values[(i*3)+2], i*10, values[((i+30)*3)], values[((i+30)*3)+1], values[((i+30)*3)+2]);
+	int d_rng = rslt->dist_range;
+	int s_rng2 = rslt->supp_range / 2;
+	int s_stp = rslt->supp_step;
+	print_line(d_rng, 0);
+	print_line(d_rng, 1);
+	print_line(d_rng, 0);
+	int i, d;
+	for (i = 0; i < s_rng2; ++i) {
+		printf("| %7d", (i-s_rng2)*s_stp);
+		for (d = 0; d < d_rng; ++d) {
+			printf(" %7d", rslt->counts[(i*d_rng) + d]);
+		}
+		printf(" |   | %7d", i*s_stp);
+		for (d = 0; d < d_rng; ++d) {
+			printf(" %7d", rslt->counts[((i+s_rng2)*d_rng) + d]);
+		}
+		printf(" |\n");
 	}
-	printf("+-----------------------------+   +-----------------------------+\n");
+	print_line(d_rng, 0);
+	printf("|        ");
+	for (i = 0; i < d; ++i)
+		printf("        ");
+	printf(" |   |   Total");
+	for (i = 0; i < d; ++i)
+		printf(" %7d", rslt->t_counts[i]);
+	printf(" |\n");
+	print_line(d_rng, 0);
+}
+
+void write_cmpr_rslt(struct cmpr_results *rslt)
+{
+	FILE *fp = fopen("plots/plot.txt", "w");
+	if (fp == NULL) {
+		fprintf(stderr, "Can't open output file plot.txt.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	
+}
+
+void print_line(int d, int head)
+{
+	head ? printf("|    Dist") : printf("+--------");
+	int i;
+	for (i = 0; i < d; ++i)
+		head ? printf(" %7d", i+1) : printf("--------");
+	head ? printf(" |   |    Dist") : printf("-+   +--------");
+	for (i = 0; i < d; ++i)
+		head ? printf(" %7d", i+1) : printf("--------");
+	head ? printf(" |\n") : printf("-+\n");
 }
 
 void print_set(struct itemset *set)

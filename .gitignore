@@ -1,0 +1,9 @@
+# folders
+LCM/
+datasets/
+
+# swap files
+*.swp
+
+# executables
+*.out
