@@ -38,7 +38,7 @@ void compare_against_all(struct cmpr_results *rslt, struct itemset *set, struct 
 int compare_set(struct itemset *a, struct itemset *b)
 {
 	int c, i;
-	for (c = 0, i = 0; i < 2; ++i)
+	for (c = 0, i = 0; i < a->data_len; ++i)
 		c += count_bits(a->items[i] & b->items[i]);
 	return c;
 }
@@ -95,7 +95,7 @@ void free_set(struct itemset *set)
 
 /* reading
  ********************************************************************/
-struct dataset *read_data(char *file, int size)
+struct dataset *read_data(char *file, int size, int len)
 {
 	FILE *fp = fopen(file, "r");
 	if (fp == NULL) {
@@ -114,7 +114,7 @@ struct dataset *read_data(char *file, int size)
 			max *= 2;
 			sets = realloc(sets, max * sizeof *sets);
 		}
-		parse_line(sets+i, line);
+		parse_line(sets+i, line, len);
 
 		if ((sets+i)->size == size)
 			++i;
@@ -131,11 +131,11 @@ struct dataset *read_data(char *file, int size)
 	data->itemsets = sets;
 }
 
-void parse_line(struct itemset *dest, char *src)
+void parse_line(struct itemset *dest, char *src, int len)
 {
 	free(dest->items);
 	int count = 0;
-	uint64_t *items = calloc(2, sizeof *items);
+	uint64_t *items = calloc(len, sizeof *items);
 	
 	char *token = strtok(src, " ");
 
@@ -151,6 +151,7 @@ void parse_line(struct itemset *dest, char *src)
 	sscanf(token, "(%d)", &support);
 
 	dest->size = count;
+	dest->data_len = len;
 	dest->items = items;
 	dest->support = support;
 }
@@ -197,7 +198,19 @@ void write_cmpr_rslt(struct cmpr_results *rslt)
 		exit(EXIT_FAILURE);
 	}
 
-	
+	int d_rng = rslt->dist_range;
+	int s_rng2 = rslt->supp_range / 2;
+	int s_stp = rslt->supp_step;
+
+	int i, d;
+	for (i = 0; i < rslt->supp_range; ++i) {
+		fprintf(fp, "%d", (i-s_rng2)*s_stp);
+		for (d = 0; d < d_rng; ++d) {
+			fprintf(fp, " %d", rslt->counts[(i*d_rng) + d]);
+		}
+		fprintf(fp, "\n");
+	}
+	fclose(fp);
 }
 
 void print_line(int d, int head)

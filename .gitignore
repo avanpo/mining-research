@@ -2,7 +2,10 @@
 LCM/
 datasets/
 
-# swap files
+# data, swap, and image files
+*.txt
+*.dat
+*.png
 *.swp
 
 # executables

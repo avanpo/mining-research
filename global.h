@@ -14,6 +14,7 @@ struct dataset {
 
 struct itemset {
 	int size;
+	int data_len;
 	uint64_t *items;
 	int support;
 };
@@ -34,8 +35,8 @@ int count_bits(uint64_t);
 int count_sparse_bits(uint64_t);
 struct itemset *choose_rand_set(struct dataset *);
 struct cmpr_results *init_cmpr_rslt(int, int, int);
-struct dataset *read_data(char *, int);
-void parse_line(struct itemset *, char *);
+struct dataset *read_data(char *, int, int);
+void parse_line(struct itemset *, char *, int);
 void free_set(struct itemset *);
 void print_cmpr_rslt(struct cmpr_results *);
 void print_line(int, int);
