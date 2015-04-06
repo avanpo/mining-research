@@ -27,19 +27,30 @@ struct cmpr_results {
 	int *t_counts;
 };
 
+/* itemset.c */
+
+int cmpr_sets(struct itemset *, struct itemset *);
+
+void parse_set(struct itemset *, char *, int);
+void free_set(struct itemset *);
+
+void print_set(struct itemset *);
+void write_set(struct itemset *, FILE *);
+void print_set_bits(struct itemset *);
+
+/* maximal.c */
+
+void get_max_from_closed_data(char *, int);
+
 /* utils.c */
 struct cmpr_results *compare_all(struct dataset *, int, int, int, int);
 void compare_against_all(struct cmpr_results *, struct itemset *, struct dataset *);
-int compare_set(struct itemset *, struct itemset *);
-int count_bits(uint64_t);
-int count_sparse_bits(uint64_t);
 struct itemset *choose_rand_set(struct dataset *);
 struct cmpr_results *init_cmpr_rslt(int, int, int);
 struct dataset *read_data(char *, int, int);
-void parse_line(struct itemset *, char *, int);
-void free_set(struct itemset *);
 void print_cmpr_rslt(struct cmpr_results *);
 void print_line(int, int);
-void print_set(struct itemset *);
-void print_set_bits(struct itemset *);
-void print_uint64_bits(uint64_t);
+
+int count_bits(uint64_t);
+int count_bits_sparse(uint64_t);
+void print_bits(uint64_t);

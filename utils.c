@@ -22,7 +22,7 @@ void compare_against_all(struct cmpr_results *rslt, struct itemset *set, struct 
 	int s_stp = rslt->supp_step;
 	int i, d, s;
 	for (i = 0; i < data->num_sets; ++i) {
-		d = data->size - compare_set(set, data->itemsets + i);
+		d = data->size - cmpr_sets(set, data->itemsets + i);
 		if (d > rslt->dist_range || d == 0)
 			continue;
 		s = ((data->itemsets+i)->support - set->support) / s_stp + (s_rng / 2);
@@ -33,30 +33,6 @@ void compare_against_all(struct cmpr_results *rslt, struct itemset *set, struct 
 		++(rslt->counts[(s * rslt->dist_range) + d - 1]);
 		++(rslt->t_counts[d - 1]);
 	}
-}
-
-int compare_set(struct itemset *a, struct itemset *b)
-{
-	int c, i;
-	for (c = 0, i = 0; i < a->data_len; ++i)
-		c += count_bits(a->items[i] & b->items[i]);
-	return c;
-}
-
-int count_bits(uint64_t x)
-{
-	x -= (x >> 1) & 0x5555555555555555ULL;
-	x = (x & 0x3333333333333333ULL) + ((x >> 2) & 0x3333333333333333ULL);
-	x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0fULL;
-	return (x * 0x0101010101010101ULL) >> 56;
-}
-
-int count_sparse_bits(uint64_t x)
-{
-	int c;
-	for (c = 0; x; ++c)
-		x &= x-1;
-	return c;
 }
 
 /* random choose
@@ -85,16 +61,9 @@ struct cmpr_results *init_cmpr_rslt(int d_rng, int s_rng, int s_stp)
 	rslt->t_counts   = t_counts;
 }
 
-/* memory management
- ********************************************************************/
-
-void free_set(struct itemset *set)
-{
-	free(set->items);
-}
-
 /* reading
  ********************************************************************/
+
 struct dataset *read_data(char *file, int size, int len)
 {
 	FILE *fp = fopen(file, "r");
@@ -114,7 +83,7 @@ struct dataset *read_data(char *file, int size, int len)
 			max *= 2;
 			sets = realloc(sets, max * sizeof *sets);
 		}
-		parse_line(sets+i, line, len);
+		parse_set(sets+i, line, len);
 
 		if ((sets+i)->size == size)
 			++i;
@@ -129,31 +98,7 @@ struct dataset *read_data(char *file, int size, int len)
 	data->num_sets = i;
 	data->size = size;
 	data->itemsets = sets;
-}
-
-void parse_line(struct itemset *dest, char *src, int len)
-{
-	free(dest->items);
-	int count = 0;
-	uint64_t *items = calloc(len, sizeof *items);
-	
-	char *token = strtok(src, " ");
-
-	int val;
-	while (token && token[0] != '(') {
-		sscanf(token, "%d", &val);
-		items[(val-1)/64] |= 0x0000000000000001ULL << ((val-1)%64);
-		count++;
-		token = strtok(NULL, " ");
-	}
-
-	int support;
-	sscanf(token, "(%d)", &support);
-
-	dest->size = count;
-	dest->data_len = len;
-	dest->items = items;
-	dest->support = support;
+	//sscanf(file, "%*s-%d", data->min_supp);
 }
 
 /* printing
@@ -225,27 +170,25 @@ void print_line(int d, int head)
 	head ? printf(" |\n") : printf("-+\n");
 }
 
-void print_set(struct itemset *set)
+/* bit operations */
+
+int count_bits(uint64_t x)
 {
-	int i, j;
-	uint64_t z;
-	for (i = 0, j = 1; i < 2; ++i) {
-		for (z = 1; z != 0; z <<= 1, ++j) {
-			if (set->items[i] & z)
-				printf("%d ", j);
-		}
-	}
-	printf("(%d)\n", set->support);
+	x -= (x >> 1) & 0x5555555555555555ULL;
+	x = (x & 0x3333333333333333ULL) + ((x >> 2) & 0x3333333333333333ULL);
+	x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0fULL;
+	return (x * 0x0101010101010101ULL) >> 56;
 }
 
-void print_set_bits(struct itemset *set)
+int count_bits_sparse(uint64_t x)
 {
-	print_uint64_bits(set->items[1]);
-	print_uint64_bits(set->items[0]);
-	printf(" (%d)\n", set->support);
+	int c;
+	for (c = 0; x; ++c)
+		x &= x-1;
+	return c;
 }
 
-void print_uint64_bits(uint64_t x)
+void print_bits(uint64_t x)
 {
 	char b[65];
 	b[64] = '\0';

@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 
 	printf("\nLoading frequent itemsets...\n\n");
 
-	struct dataset *data = read_data("datasets/connect-all-30000.dat", 18, 3);
+	struct dataset *data = read_data("datasets/retail-all-3.dat", 13, 258);
 
 	printf("Total num frequent itemsets: %d\n", data->total_sets);
 	printf("Num itemsets of size %d: %d\n\n", data->size, data->num_sets);
@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	printf("\nSimilar frequent itemsets:\n\n");
 	struct cmpr_results *rslt;
 
-	rslt = compare_all(data, 100, 3, 80, 100);
+	rslt = compare_all(data, 1000, 3, 100, 1);
 
 	print_cmpr_rslt(rslt);
 	write_cmpr_rslt(rslt);
