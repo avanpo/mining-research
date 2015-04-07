@@ -40,9 +40,11 @@ void print_set_bits(struct itemset *);
 
 /* maximal.c */
 
-void get_max_from_closed_data(char *, int);
+void get_max_from_closed_data(char *, int, char *);
 
 /* utils.c */
+void print_progress_bar(int);
+
 struct cmpr_results *compare_all(struct dataset *, int, int, int, int);
 void compare_against_all(struct cmpr_results *, struct itemset *, struct dataset *);
 struct itemset *choose_rand_set(struct dataset *);

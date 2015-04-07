@@ -104,6 +104,18 @@ struct dataset *read_data(char *file, int size, int len)
 /* printing
  ********************************************************************/
 
+void print_progress_bar(int val)
+{
+	printf("\r[");
+	int i;
+	for (i = 0; i < (val * 6 / 10); ++i)
+		putchar('=');
+	for (i = (val * 6 / 10); i < 60; ++i)
+		putchar(' ');
+	printf("] %3d%%", val);
+	fflush(stdout);
+}
+
 void print_cmpr_rslt(struct cmpr_results *rslt)
 {
 	int d_rng = rslt->dist_range;
