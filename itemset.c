@@ -51,7 +51,7 @@ void print_set(struct itemset *set)
 {
 	int i, j;
 	uint64_t z;
-	for (i = 0, j = 1; i < 2; ++i) {
+	for (i = 0, j = 1; i < set->data_len; ++i) {
 		for (z = 1; z != 0; z <<= 1, ++j) {
 			if (set->items[i] & z)
 				printf("%d ", j);
@@ -64,7 +64,7 @@ void write_set(struct itemset *set, FILE *fp)
 {
 	int i, j;
 	uint64_t z;
-	for (i = 0, j = 1; i < 2; ++i) {
+	for (i = 0, j = 1; i < set->data_len; ++i) {
 		for (z = 1; z != 0; z <<= 1, ++j) {
 			if (set->items[i] & z)
 				fprintf(fp, "%d ", j);

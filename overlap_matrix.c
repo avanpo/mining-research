@@ -36,8 +36,12 @@ struct overlap_matrix *generate_overlap_matrix(char *file, int len)
 
 	int *overlap = (int *)malloc(i * i * sizeof (int));
 
-	int j;
-	for (i = 0; i < n; ++i) {
+	int j, val;
+	for (val = -1, i = 0; i < n; ++i) {
+		if (val != 100 * i / n) {
+			val = 100 * i / n;
+			print_progress_bar(val);
+		}
 		overlap[i*n + i] = (sets+i)->size;
 		for (j = i + 1; j < n; ++j) {
 			int similar = cmpr_sets(sets+i, sets+j);
