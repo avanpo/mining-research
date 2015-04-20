@@ -3,7 +3,7 @@
 /* searching and comparing
  ********************************************************************/
 
-struct cmpr_results *compare_all(struct dataset *data, int n, int d_rng, int s_rng, int s_stp)
+struct cmpr_results *compare_all(struct dataset_size *data, int n, int d_rng, int s_rng, int s_stp)
 {
 	struct cmpr_results *rslt = init_cmpr_rslt(d_rng, s_rng, s_stp);
 
@@ -16,7 +16,7 @@ struct cmpr_results *compare_all(struct dataset *data, int n, int d_rng, int s_r
 	return rslt;
 }
 
-void compare_against_all(struct cmpr_results *rslt, struct itemset *set, struct dataset *data)
+void compare_against_all(struct cmpr_results *rslt, struct itemset *set, struct dataset_size *data)
 {
 	int s_rng = rslt->supp_range;
 	int s_stp = rslt->supp_step;
@@ -38,7 +38,7 @@ void compare_against_all(struct cmpr_results *rslt, struct itemset *set, struct 
 /* random choose
  ********************************************************************/
 
-struct itemset *choose_rand_set(struct dataset *data)
+struct itemset *choose_rand_set(struct dataset_size *data)
 {
 	int r = rand() % data->num_sets;
 	return data->itemsets + r;
@@ -64,7 +64,46 @@ struct cmpr_results *init_cmpr_rslt(int d_rng, int s_rng, int s_stp)
 /* reading
  ********************************************************************/
 
-struct dataset *read_data(char *file, int size, int len)
+struct dataset *read_data(char *file, int len)
+{
+	FILE *fp = fopen(file, "r");
+	if (fp == NULL) {
+		fprintf(stderr, "Can't open input file %s.\n", file);
+		exit(EXIT_FAILURE);
+	}
+
+	printf("Reading file...\n");
+
+	int max = 1024;
+	struct itemset *sets = malloc(max * sizeof *sets);
+
+	int i, max_size = 0;
+	char line[1024] = {0};
+	for (i = 0; fgets(line, 255, fp) != NULL; ++i) {
+		if (i == max) {
+			max *= 2;
+			sets = realloc(sets, max * sizeof *sets);
+		}
+		parse_set(sets+i, line, len);
+		if ((sets+i)->size > max_size) {
+			max_size = (sets+i)->size;
+		}
+	}
+
+	fclose(fp);
+
+	struct dataset *rslt = malloc(sizeof *rslt);
+
+	rslt->num_sets = i;
+	rslt->itemsets = sets;
+	rslt->max_set_size = max_size + 1;
+
+	printf("Finished reading file.\n");
+	
+	return rslt;
+}
+
+struct dataset_size *read_data_of_size(char *file, int size, int len)
 {
 	FILE *fp = fopen(file, "r");
 	if (fp == NULL) {
@@ -92,13 +131,45 @@ struct dataset *read_data(char *file, int size, int len)
 
 	fclose(fp);
 
-	struct dataset *data = malloc(sizeof *data);
+	struct dataset_size *data = malloc(sizeof *data);
 	
 	data->total_sets = total;
 	data->num_sets = i;
 	data->size = size;
 	data->itemsets = sets;
-	//sscanf(file, "%*s-%d", data->min_supp);
+}
+
+/* histograms
+ ********************************************************************/
+
+void print_histogram(struct histogram *h)
+{
+	int i;
+	printf("size |");
+	for (i = 0; i < ((h->max - h->min) / h->step); ++i)
+		printf("%6d", *(h->vals + i));
+	printf("\n-----|");
+	for (i = 0; i < ((h->max - h->min) / h->step); ++i)
+		printf("------");
+	printf("\nnum  |");
+	for (i = h->min; i < h->max; i += h->step)
+		printf("%6d", i);
+	printf("\n");
+}
+
+void write_histogram(struct histogram *h)
+{
+	FILE *fp = fopen("plots/plot.txt", "w");
+	if (fp == NULL) {
+		fprintf(stderr, "Can't open output file plot.txt.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	int i;
+	for (i = h->min; i < h->max; i += h->step) {
+		fprintf(fp, "%d %d\n", i, *(h->vals + (i - h->min) / h->step));
+	}
+	fclose(fp);
 }
 
 /* printing
