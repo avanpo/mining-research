@@ -1,6 +1,6 @@
 #include "global.h"
 
-struct histogram *get_histogram(struct dataset *data)
+struct histogram *get_histogram(struct dataset *data, int norm)
 {
 	struct histogram *hist = malloc(sizeof *hist);
 	int *vals = calloc(data->max_set_size, sizeof *vals);

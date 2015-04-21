@@ -23,17 +23,17 @@ set style line 6 lc rgb "#ff9900" pt 6 ps 1 lt 1 lw 2 # orange
 set style line 7 lc rgb "#003399" pt 7 ps 1 lt 1 lw 2 # blue
 
 #labeling
-set title "Maximal Set Size" font "Monospace Bold, 10"
-set xlabel "Set size"
+set title "Overlap between maximal set" font "Monospace Bold, 10"
+set xlabel "Overlap size"
 set ylabel "Number of sets"
 
 set key center right
 
-plot "plot.txt" using 1:2 title "10" w lp ls 1, \
-     ""         using 1:3 title "11" w lp ls 2, \
-     ""         using 1:4 title "12" w lp ls 3, \
-     ""         using 1:5 title "13" w lp ls 4, \
-     ""         using 1:6 title "14" w lp ls 5, \
-     ""         using 1:7 title "15" w lp ls 6, \
-     ""         using 1:8 title "16" w lp ls 7
+plot "plot.txt" using 1:2 title "12" w lp ls 1, \
+     ""         using 1:3 title "13" w lp ls 2, \
+     ""         using 1:4 title "14" w lp ls 3, \
+     ""         using 1:5 title "15" w lp ls 4, \
+     ""         using 1:6 title "16" w lp ls 5, \
+     ""         using 1:7 title "17" w lp ls 6, \
+     ""         using 1:8 title "18" w lp ls 7
 #

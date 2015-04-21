@@ -166,7 +166,7 @@ int *extract_histogram_leq(struct sum_matrix *sm)
 	return rslt;
 }
 
-int *extract_histograms_eq(struct sum_matrix **sm, int l, int r)
+int *extract_histograms_eq(struct sum_matrix **sm, int l, int r, int norm)
 {
 	int *rslt = calloc((*sm)->set_size_max * (r - l), sizeof *rslt);
 	int *hist = rslt;
@@ -174,13 +174,16 @@ int *extract_histograms_eq(struct sum_matrix **sm, int l, int r)
 	int i, j;
 	for (i = 0; i < (r - l); ++i, ++sm) {
 		for (j = 0; j < (*sm)->set_size_max; ++j) {
-			rslt[i * (*sm)->set_size_max + j] = *((*sm)->sums + (*sm)->size * (*sm)->set_size_max + j);
+			rslt[i*(*sm)->set_size_max + j] = *((*sm)->sums + (*sm)->size * (*sm)->set_size_max + j);
+			if (norm) {
+				rslt[i * (*sm)->set_size_max + j] /= choose(i + l, j);
+			}
 		}
 	}
 	return rslt;
 }
 
-int *extract_histograms_leq(struct sum_matrix **sm, int l, int r)
+int *extract_histograms_leq(struct sum_matrix **sm, int l, int r, int norm)
 {
 	int *rslt = calloc((*sm)->set_size_max * (r - l), sizeof *rslt);
 	int *hist = rslt;
@@ -191,12 +194,15 @@ int *extract_histograms_leq(struct sum_matrix **sm, int l, int r)
 			for (k = 0; k <= (*sm)->size; ++k) {
 				rslt[i * (*sm)->set_size_max + j] += *((*sm)->sums + k * (*sm)->set_size_max + j);
 			}
+			if (norm) {
+				rslt[i * (*sm)->set_size_max + j] /= choose(i + l, j);
+			}
 		}
 	}
 	return rslt;
 }
 
-void print_histogram(int *hist)
+void print_hist(int *hist)
 {
 	int i;
 	for (i = 0; i < 19; ++i) {
@@ -208,17 +214,29 @@ void print_histogram(int *hist)
 void print_histograms(int *hists, int max, int l, int r)
 {
 	int i, j;
+	printf("    |");
+	for (j = 0; j < max; ++j)
+		printf("%6d", j);
+	printf("\n----+");
+	for (j = 0; j < max; ++j)
+		printf("------");
+	printf("\n");
 	for (i = 0; i < (r - l); ++i) {
+		printf("%3d |", i + l);
 		for (j = 0; j < max; ++j) {
 			printf("%6d", *(hists + i * max + j));
 		}
 		printf("\n");
 	}
+	printf("----+");
+	for (j = 0; j < max; ++j)
+		printf("------");
+	printf("\n");
 }
 
 void write_histograms(int *hists, int max, int l, int r)
 {
-	FILE *fp = fopen("plots/h", "w");
+	FILE *fp = fopen("plots/plot.txt", "w");
 	if (fp == NULL) {
 		fprintf(stderr, "Can't open output file plot.txt.\n");
 		exit(EXIT_FAILURE);
@@ -243,15 +261,16 @@ int main(int argc, char *argv[])
 	struct overlap_matrix *m = generate_overlap_matrix(argv[1], len);
 
 	// Create histogram range
-	int i, l = 10, r = 17;
+	int i, l = 12, r = 19;
 	struct sum_matrix **sm = malloc((r - l) * sizeof *sm);
 	for (i = 0; i < (r - l); ++i) {
 		sm[i] = sum_overlap_matrix(m, i + l);
 	}
-
-	int *hists = extract_histograms_eq(sm, l, r);
+	int *hists = extract_histograms_eq(sm, l, r, 0);
+	int *hists2 = extract_histograms_eq(sm, l, r, 1);
 	print_histograms(hists, m->set_size_max, l, r);
-	write_histograms(hists, m->set_size_max, l, r);
-	
+	print_histograms(hists2, m->set_size_max, l, r);
+	//write_histograms(hists, m->set_size_max, l, r);
+
 	return 0;
 }
